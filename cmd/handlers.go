@@ -4,7 +4,6 @@ import (
 	"avito_app/internal/models"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -41,7 +40,7 @@ func (app *application) getBanner(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 	v := r.URL.Query()
-	featureID, tagID, limitID := 0, 0, 0
+	featureID, tagID, limitID, offset := -1, -1, -1, -1
 	var err error
 	tag := v.Get("tag_id")
 	if tag != "" {
@@ -67,8 +66,26 @@ func (app *application) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	w.WriteHeader(200)
-	w.Write([]byte(fmt.Sprint(tagID, featureID, limitID)))
+	offsetStr := v.Get("offset")
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+	banners, err := app.banners.GetAll(tagID, featureID, limitID, offset)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	data, err := json.MarshalIndent(banners, "", "	")
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 
 }
