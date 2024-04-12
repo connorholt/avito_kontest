@@ -4,46 +4,34 @@ import (
 	"flag"
 	"fmt"
 
+	"avito_app/internal/models"
 	"log"
 	"net/http"
 	"os"
 
-
 	_ "github.com/lib/pq"
 )
 
-//	@title			Vk_app
-//	@version		1.0
-//	@description	My Application
-//  @schemes 		http
-//	@host			localhost:5000
-//	@BasePath		/
-//  @securityDefinitions.apikey ApiKeyAuth
-//  @in header
-//  @name Authorization
-
 type application struct {
-	infoLog     *log.Logger
-	errorLog    *log.Logger
-	people      storage.ActorStorageInterface
-	films       storage.FilmStorageInterface
-	users       storage.UserStorageInterface
-	filmsActors storage.FilmActorStorageInterface
+	infoLog  *log.Logger
+	errorLog *log.Logger
+	banners  *models.BannerModel
 }
 
 func main() {
-	db_c := config.GetConfig()
+	dbConfig := GetConfig()
 
 	addr := flag.String("addr", ":5000", "HTTP network address")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable", db_c.Host, db_c.Port, db_c.User, db_c.Password, db_c.DB_name)
+		"password=%s dbname=%s sslmode=disable",
+		dbConfig.Host, dbConfig.Port, dbConfig.User, dbConfig.Password, dbConfig.DB_name)
 
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime)
 
-	db, err := storage.OpenDB(psqlInfo)
+	db, err := models.OpenDB(psqlInfo)
 
 	if err != nil {
 		panic(err)
@@ -51,12 +39,9 @@ func main() {
 	defer db.Close()
 
 	app := application{
-		infoLog:     infoLog,
-		errorLog:    errorLog,
-		people:      &storage.ActorStorage{DB: db},
-		films:       &storage.FilmStorage{DB: db},
-		users:       &storage.UserStorage{DB: db},
-		filmsActors: &storage.FilmActorStorage{DB: db},
+		infoLog:  infoLog,
+		errorLog: errorLog,
+		banners:  &models.BannerModel{db},
 	}
 
 	srv := &http.Server{
