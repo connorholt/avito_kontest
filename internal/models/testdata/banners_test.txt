@@ -1,0 +1,18 @@
+//package models
+//
+//import (
+//	"avito_app/internal/models"
+//	"database/sql"
+//	"fmt"
+//	"testing"
+//)
+//
+//func newTestDB(t *testing.T) *sql.DB {
+//	dbConfig := models.GetConfig()
+//	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+//		"password=%s dbname=%s sslmode=disable",
+//		dbConfig.Host, dbConfig.Port, dbConfig.User, dbConfig.Password, dbConfig.DB_name)
+//
+//	db, err := sql.Open("postgres", psqlInfo)
+//
+//}

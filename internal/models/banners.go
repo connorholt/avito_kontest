@@ -13,19 +13,19 @@ type BannerModel struct {
 }
 
 type Content struct {
-	Title string `json:"title"`
-	Text  string `json:"text"`
-	URL   string `json:"url"`
+	Title string `json:"title" example:"some_title"`
+	Text  string `json:"text" example:"some_text"`
+	URL   string `json:"url" example:"some_url"`
 }
 
 type Banner struct {
-	ID        int        `json:"banner_id"`
-	TagID     []int      `json:"tag_ids"`
-	FeatureID int        `json:"feature_id"`
+	ID        int        `json:"banner_id" `
+	TagID     []int      `json:"tag_ids" example:"0"`
+	FeatureID int        `json:"feature_id" example:"0"`
 	Content   Content    `json:"content"`
-	IsActive  *bool      `json:"is_active"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	IsActive  *bool      `json:"is_active" example:"true"`
+	CreatedAt *time.Time `json:"created_at,omitempty" example:"2024-04-14"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty" example:"2024-04-14"`
 }
 
 func (m *BannerModel) Get(tagId int, featureId int) (*Banner, error) {

@@ -11,6 +11,19 @@ import (
 	"time"
 )
 
+// @Summary getBanner
+// @ID get-banner-id
+// @Param feature_id query integer true "feature_id"
+// @Param tag_id query integer true "tag_id"
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Success 200 "OK"
+// @Failure 400 "Client Error"
+// @Failure 401 "You are not authorized"
+// @Failure 404 "Not Found"
+// @Failure 500 "Internal server error"
+// @Router /user_banner [get]
 func (app *application) getBanner(w http.ResponseWriter, r *http.Request) {
 	v := r.URL.Query()
 	tagId, err := strconv.Atoi(v.Get("tag_id"))
@@ -60,6 +73,21 @@ func (app *application) getBanner(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+// @Summary getAllBanners
+// @ID get-all-banners-id
+// @Param feature_id query integer false "feature_id"
+// @Param tag_id query integer false "tag_id"
+// @Param limit query integer false "limit"
+// @Param offset query integer false "offset"
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Success 200 "OK"
+// @Failure 400 "Client Error"
+// @Failure 401 "You are not authorized"
+// @Failure 403 "Forbidden"
+// @Failure 500 "Internal server error"
+// @Router /banner [get]
 func (app *application) getAllBanners(w http.ResponseWriter, r *http.Request) {
 	v := r.URL.Query()
 	featureID, tagID, limitID, offset := 0, 0, 0, 0
@@ -117,6 +145,18 @@ func (app *application) getAllBanners(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+// @Summary deleteBanner
+// @ID delete-banner-id
+// @Param id path integer true "banner id"
+// @Security ApiKeyAuth
+// @Accept json
+// @Success 200 "OK"
+// @Failure 400 "Client Error"
+// @Failure 401 "You are not authorized"
+// @Failure 403 "Forbidden"
+// @Failure 404 "Not Found"
+// @Failure 500 "Internal server error"
+// @Router /banner/{id} [delete]
 func (app *application) deleteBanner(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -136,6 +176,18 @@ func (app *application) deleteBanner(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// @Summary createBanner
+// @ID create-banner-id
+// @Param input body  models.Banner true "Data about banner"
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Success 200 "OK"
+// @Failure 400 "Client Error"
+// @Failure 401 "You are not authorized"
+// @Failure 403 "Forbidden"
+// @Failure 500 "Internal server error"
+// @Router /banner [post]
 func (app *application) createBanner(w http.ResponseWriter, r *http.Request) {
 	var banner models.Banner
 	err := json.NewDecoder(r.Body).Decode(&banner)
@@ -176,7 +228,20 @@ func (app *application) createBanner(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func (app *application) patchBanner(w http.ResponseWriter, r *http.Request) {
+// @Summary patchBanner
+// @ID patch-banner-id
+// @Param id path integer true "banner id"
+// @Param input body  models.Banner true "Data about banner"
+// @Security ApiKeyAuth
+// @Accept json
+// @Success 200 "OK"
+// @Failure 400 "Client Error"
+// @Failure 401 "You are not authorized"
+// @Failure 403 "Forbidden"
+// @Failure 404 "Not Found"
+// @Failure 500 "Internal server error"
+// @Router /banner/{id} [patch]
+func (app *application) updateBanner(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
@@ -214,6 +279,15 @@ func (app *application) patchBanner(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// @Summary registerUser
+// @Description register new user
+// @Tags registration and logging
+// @Param input body RegisterRequest true "New user info"
+// @Accept json
+// @Produce json
+// @success 201 {integer} integer "New user registered"
+// @Failure 409 {object} error
+// @Router /register [post]
 func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 
 	u := RegisterRequest{}
@@ -243,6 +317,15 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// @Summary loginUser
+// @Description login existing user
+// @Tags registration and logging
+// @Param input body LoginRequest true "New user info"
+// @Accept json
+// @Produce json
+// @success 200 {integer} integer "Succesfuly logged in
+// @Failure 409 {object} error
+// @Router /login [post]
 func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 
 	logReq := LoginRequest{}
@@ -286,4 +369,25 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+// @Summary fillTables
+// @Description fill tables features and tags 1000 rows
+// @Tags preparing
+// @success 200 {integer} integer
+// @Failure 500 "Internal server error"
+// @Router /fill_tables [post]
+func (app *application) fillFeatureAndTags(w http.ResponseWriter, r *http.Request) {
+	err := fillTable("features", app.banners.DB)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	err = fillTable("tags", app.banners.DB)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

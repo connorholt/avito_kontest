@@ -4,12 +4,21 @@ import (
 	"avito_app/internal/models"
 	"flag"
 	"fmt"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"os"
-
-	_ "github.com/lib/pq"
 )
+
+//	@title			avito_app
+//	@version		1.0
+//	@description	My Application
+//  @schemes 		http
+//	@host			localhost:5000
+//	@BasePath		/
+//  @securityDefinitions.apikey ApiKeyAuth
+//  @in header
+//  @name Authorization
 
 type application struct {
 	infoLog   *log.Logger
@@ -21,7 +30,7 @@ type application struct {
 }
 
 func main() {
-	dbConfig := GetConfig()
+	dbConfig := models.GetConfig()
 
 	addr := flag.String("addr", ":5000", "HTTP network address")
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+

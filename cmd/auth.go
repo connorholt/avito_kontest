@@ -3,13 +3,13 @@ package main
 var secretKey = []byte("secret_token")
 
 type RegisterRequest struct {
-	Name     string `json:"name" example:"John Doe"`
-	Password string `json:"password" example:"Pass123"`
-	Role     string `json:"role" example:"user"`
+	Name     string `json:"name" example:"John"`
+	Password string `json:"password" example:"123"`
+	Role     string `json:"role" example:"admin"`
 }
 
 type LoginRequest struct {
-	Name     string `json:"name" example:"user"`
+	Name     string `json:"name" example:"admin"`
 	Password string `json:"password" example:"123"`
 }
 
