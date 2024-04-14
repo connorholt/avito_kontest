@@ -38,9 +38,9 @@ func (app *application) getBanner(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func (app *application) GetAllBanners(w http.ResponseWriter, r *http.Request) {
+func (app *application) getAllBanners(w http.ResponseWriter, r *http.Request) {
 	v := r.URL.Query()
-	featureID, tagID, limitID, offset := -1, -1, -1, -1
+	featureID, tagID, limitID, offset := 0, 0, 0, 0
 	var err error
 	tag := v.Get("tag_id")
 	if tag != "" {
@@ -74,6 +74,12 @@ func (app *application) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	for _, value := range []int{tagID, featureID, limitID, offset} {
+		if value < 0 {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
 	banners, err := app.banners.GetAll(tagID, featureID, limitID, offset)
 	if err != nil {
 		app.serverError(w, err)
@@ -84,8 +90,70 @@ func (app *application) GetAllBanners(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
-
 }
+
+func (app *application) deleteBanner(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	err = app.banners.Delete(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.clientError(w, http.StatusNotFound)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) createBanner(w http.ResponseWriter, r *http.Request) {
+	var banner models.Banner
+	err := json.NewDecoder(r.Body).Decode(&banner)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	err = banner.Validate()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	bannerID, err := app.banners.Create(banner)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	err = app.banners.InsertBannerTag(bannerID, banner.TagID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	res := struct {
+		BannerID int `json:"banner_id"`
+	}{BannerID: bannerID}
+	data, err := json.MarshalIndent(res, "", "	")
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	w.Write(data)
+}
+
+//func (app *application) patchBanner(w http.ResponseWriter, r *http.Request) {
+//	id, err := strconv.Atoi(r.PathValue("id"))
+//	if err != nil {
+//		app.clientError(w, http.StatusBadRequest)
+//		return
+//	}
+//
+//}

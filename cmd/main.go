@@ -41,7 +41,7 @@ func main() {
 	app := application{
 		infoLog:  infoLog,
 		errorLog: errorLog,
-		banners:  &models.BannerModel{db},
+		banners:  &models.BannerModel{DB: db},
 	}
 
 	srv := &http.Server{
