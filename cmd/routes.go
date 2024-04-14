@@ -13,6 +13,6 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /banner", app.getAllBanners)
 	mux.HandleFunc("POST /banner", app.createBanner)
 	mux.HandleFunc("DELETE /banner/{id}", app.deleteBanner)
-	//mux.HandleFunc("PATCH /banner/{id}", app.patchBanner)
+	mux.HandleFunc("PATCH /banner/{id}", app.patchBanner)
 	return chain.Then(mux)
 }

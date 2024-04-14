@@ -13,9 +13,10 @@ import (
 )
 
 type application struct {
-	infoLog  *log.Logger
-	errorLog *log.Logger
-	banners  *models.BannerModel
+	infoLog   *log.Logger
+	errorLog  *log.Logger
+	banners   *models.BannerModel
+	bannerTag *models.BannerTagModel
 }
 
 func main() {
@@ -39,9 +40,10 @@ func main() {
 	defer db.Close()
 
 	app := application{
-		infoLog:  infoLog,
-		errorLog: errorLog,
-		banners:  &models.BannerModel{DB: db},
+		infoLog:   infoLog,
+		errorLog:  errorLog,
+		banners:   &models.BannerModel{DB: db},
+		bannerTag: &models.BannerTagModel{DB: db},
 	}
 
 	srv := &http.Server{

@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -116,7 +118,7 @@ func (m *BannerModel) Delete(id int) error {
 
 func (m *BannerModel) Create(b Banner) (int, error) {
 	stmt := `INSERT INTO banners (title, text, url, visible, feature_id) VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	row := m.DB.QueryRow(stmt, b.Content.Title, b.Content.Text, b.Content.URL, b.IsActive, b.FeatureID)
+	row := m.DB.QueryRow(stmt, b.Content.Title, b.Content.Text, b.Content.URL, *b.IsActive, b.FeatureID)
 	var insertedID int
 	err := row.Scan(&insertedID)
 	if err != nil {
@@ -125,39 +127,50 @@ func (m *BannerModel) Create(b Banner) (int, error) {
 	return insertedID, nil
 }
 
-func (m *BannerModel) InsertBannerTag(bannerID int, tagIDs []int) error {
-	stmt := `INSERT INTO banner_tag VALUES ($1, $2)`
-
-	for i := range tagIDs {
-		_, err := m.DB.Exec(stmt, bannerID, tagIDs[i])
-		if err != nil {
-			return err
-		}
+func (m *BannerModel) Update(b Banner) error {
+	var stmt strings.Builder
+	stmt.WriteString("UPDATE banners set ")
+	args := make([]any, 0, 10)
+	index := 2
+	args = append(args, b.ID)
+	if b.Content.Title != "" {
+		stmt.WriteString(fmt.Sprintf("title = $%d , ", index))
+		args = append(args, b.Content.Title)
+		index++
+	}
+	if b.Content.Text != "" {
+		stmt.WriteString(fmt.Sprintf("text = $%d , ", index))
+		args = append(args, b.Content.Text)
+		index++
+	}
+	if b.Content.URL != "" {
+		stmt.WriteString(fmt.Sprintf("url = $%d , ", index))
+		args = append(args, b.Content.URL)
+		index++
+	}
+	if b.FeatureID != 0 {
+		stmt.WriteString(fmt.Sprintf("feature_id = $%d , ", index))
+		args = append(args, b.FeatureID)
+		index++
+	}
+	if b.IsActive != nil {
+		stmt.WriteString(fmt.Sprintf("visible = $%d , ", index))
+		args = append(args, *b.IsActive)
+		index++
+	}
+	stmt.WriteString(" updated_at = CURRENT_TIMESTAMP where id = $1")
+	res, err := m.DB.Exec(stmt.String(), args...)
+	if err != nil {
+		return err
+	}
+	if count, err := res.RowsAffected(); err != nil {
+		return err
+	} else if count == 0 {
+		return ErrNoRecord
 	}
 
 	return nil
 }
-
-//func (m *BannerModel) Update(b Banner) error {
-//	stmt := `UPDATE banners set `
-//	var bldr strings.Builder
-//	if b.Content.Title != "" {
-//		bldr.WriteString("title = $1, ")
-//	}
-//	if b.Content.Text != "" {
-//		bldr.WriteString("text = $2, ")
-//	}
-//	if b.Content.URL != "" {
-//		bldr.WriteString("url = $3, ")
-//	}
-//	if b.FeatureID != 0 {
-//		bldr.WriteString("feature_id =$4")
-//	}
-//	//if b.IsActive != nil {
-//	//	bldr.WriteString("feature_id =$5")
-//	//}
-//	_, err := m.DB.Exec(stmt, b.Content.Title, b.Content.Text, b.Content.URL, b.FeatureID, b.IsActive)
-//}
 
 func (m *BannerModel) getIDs(bannerID int) ([]int, error) {
 	stmt := `SELECT tag_id from banner_tag where banner_id = $1`

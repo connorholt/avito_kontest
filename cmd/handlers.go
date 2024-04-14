@@ -122,9 +122,14 @@ func (app *application) createBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = banner.Validate()
+
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
+	}
+	if banner.IsActive == nil {
+		flag := true
+		banner.IsActive = &flag
 	}
 	bannerID, err := app.banners.Create(banner)
 	if err != nil {
@@ -132,7 +137,7 @@ func (app *application) createBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.banners.InsertBannerTag(bannerID, banner.TagID)
+	err = app.bannerTag.Insert(bannerID, banner.TagID)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -149,11 +154,40 @@ func (app *application) createBanner(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-//func (app *application) patchBanner(w http.ResponseWriter, r *http.Request) {
-//	id, err := strconv.Atoi(r.PathValue("id"))
-//	if err != nil {
-//		app.clientError(w, http.StatusBadRequest)
-//		return
-//	}
-//
-//}
+func (app *application) patchBanner(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	var banner models.Banner
+	err = json.NewDecoder(r.Body).Decode(&banner)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	banner.ID = id
+	err = app.banners.Update(banner)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.clientError(w, http.StatusNotFound)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+	if len(banner.TagID) != 0 {
+		err = app.bannerTag.Delete(banner.ID)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		err = app.bannerTag.Create(banner.ID, banner.TagID)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
