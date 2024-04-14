@@ -4,8 +4,11 @@ import (
 	"avito_app/internal/models"
 	"encoding/json"
 	"errors"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (app *application) getBanner(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +32,12 @@ func (app *application) getBanner(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	data, err := json.MarshalIndent(banner, "", "	")
+	if *banner.IsActive == false {
+		app.clientError(w, http.StatusNotFound)
+		return
+	}
+	content := banner.Content
+	data, err := json.MarshalIndent(content, "", "	")
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -137,7 +145,7 @@ func (app *application) createBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.bannerTag.Insert(bannerID, banner.TagID)
+	err = app.bannerTag.Create(bannerID, banner.FeatureID, banner.TagID)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -182,7 +190,7 @@ func (app *application) patchBanner(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, err)
 			return
 		}
-		err = app.bannerTag.Create(banner.ID, banner.TagID)
+		err = app.bannerTag.Create(banner.ID, banner.FeatureID, banner.TagID)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -190,4 +198,78 @@ func (app *application) patchBanner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
+
+	u := RegisterRequest{}
+	err := json.NewDecoder(r.Body).Decode(&u)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	if u.Role == "" {
+		u.Role = "user"
+	} else if u.Role != "user" && u.Role != "admin" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	err = app.users.Insert(u.Name, u.Password, u.Role)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateUserName) {
+			app.clientError(w, http.StatusBadRequest)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
+
+	logReq := LoginRequest{}
+	err := json.NewDecoder(r.Body).Decode(&logReq)
+	if err != nil {
+		app.serverError(w, err)
+	}
+
+	u, err := app.users.Get(logReq.Name)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.clientError(w, http.StatusUnauthorized)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	if err = bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(logReq.Password)); err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	payload := jwt.MapClaims{
+		"sub":  u.Name,
+		"exp":  time.Now().Add(time.Hour * 72).Unix(),
+		"role": u.Role,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+	t, err := token.SignedString(secretKey)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data, err := json.MarshalIndent(LoginToken{AccessToken: t}, "", "	")
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }

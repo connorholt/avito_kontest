@@ -28,16 +28,16 @@ type Banner struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
-func (m *BannerModel) Get(tagId int, featureId int) (*Content, error) {
-	stmt := `SELECT title, text, url from banners b 
+func (m *BannerModel) Get(tagId int, featureId int) (*Banner, error) {
+	stmt := `SELECT title, text, url, visible from banners b 
                                join features f on b.feature_id = f.id 
-                               join banner_tag bt on b.id = bt.banner_id
+                               join banner_feature_tag bt on b.id = bt.banner_id
                                join tags t on t.id = bt.tag_id
-								where feature_id = $1 and tag_id = $2`
-	c := Content{}
+								where b.feature_id = $1 and tag_id = $2`
+	b := Banner{}
 	row := m.DB.QueryRow(stmt, featureId, tagId)
 
-	err := row.Scan(&c.Title, &c.Text, &c.URL)
+	err := row.Scan(&b.Content.Title, &b.Content.Text, &b.Content.URL, &b.IsActive)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -45,18 +45,18 @@ func (m *BannerModel) Get(tagId int, featureId int) (*Content, error) {
 			return nil, err
 		}
 	}
-	return &c, nil
+	return &b, nil
 }
 
 func (m *BannerModel) GetAll(tagID, featureID, limit, offset int) (*[]Banner, error) {
-	stmt := `SELECT DISTINCT b.id,  feature_id, title, text, url, visible, created_at, updated_at from banners b
+	stmt := `SELECT DISTINCT b.id,  b.feature_id, title, text, url, visible, created_at, updated_at from banners b
                               join features f on b.feature_id = f.id
-                              join banner_tag bt on b.id = bt.banner_id
+                              join banner_feature_tag bt on b.id = bt.banner_id
                               join tags t on t.id = bt.tag_id
 								where case
-								when $1 > 0 and $2 > 0 then tag_id = $1 and feature_id = $2
+								when $1 > 0 and $2 > 0 then tag_id = $1 and b.feature_id = $2
 								when  $1 > 0 then tag_id = $1
-								when $2 > 0 then feature_id = $2
+								when $2 > 0 then b.feature_id = $2
 								else true
 								end 
 								order by b.id
@@ -173,7 +173,7 @@ func (m *BannerModel) Update(b Banner) error {
 }
 
 func (m *BannerModel) getIDs(bannerID int) ([]int, error) {
-	stmt := `SELECT tag_id from banner_tag where banner_id = $1`
+	stmt := `SELECT tag_id from banner_feature_tag where banner_id = $1`
 	rows, err := m.DB.Query(stmt, bannerID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

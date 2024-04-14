@@ -17,6 +17,8 @@ type application struct {
 	errorLog  *log.Logger
 	banners   *models.BannerModel
 	bannerTag *models.BannerTagModel
+	users     *models.UserModel
+	cache
 }
 
 func main() {
@@ -44,6 +46,7 @@ func main() {
 		errorLog:  errorLog,
 		banners:   &models.BannerModel{DB: db},
 		bannerTag: &models.BannerTagModel{DB: db},
+		users:     &models.UserModel{DB: db},
 	}
 
 	srv := &http.Server{
