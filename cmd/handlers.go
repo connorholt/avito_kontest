@@ -23,15 +23,29 @@ func (app *application) getBanner(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	banner, err := app.banners.Get(tagId, featureId)
-	if err != nil {
-		if errors.Is(err, models.ErrNoRecord) {
-			app.clientError(w, http.StatusNotFound)
-		} else {
-			app.serverError(w, err)
-		}
-		return
+	var lastRevision bool
+	if headValue := r.Header.Get("use_last_revision"); headValue == "true" {
+		lastRevision = true
 	}
+	key := pair{tagID: tagId, featureID: featureId}
+	var banner *models.Banner
+	value, ok := app.cache[key]
+	if ok && !lastRevision && time.Since(value.timestamp) <= 5*time.Minute {
+		banner = value.banner
+	} else {
+		res, err := app.banners.Get(tagId, featureId)
+		if err != nil {
+			if errors.Is(err, models.ErrNoRecord) {
+				app.clientError(w, http.StatusNotFound)
+			} else {
+				app.serverError(w, err)
+			}
+			return
+		}
+		banner = res
+		app.cache[key] = cacheValue{banner, time.Now()}
+	}
+
 	if *banner.IsActive == false {
 		app.clientError(w, http.StatusNotFound)
 		return

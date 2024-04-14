@@ -1,10 +1,9 @@
 package main
 
 import (
+	"avito_app/internal/models"
 	"flag"
 	"fmt"
-
-	"avito_app/internal/models"
 	"log"
 	"net/http"
 	"os"
@@ -18,7 +17,7 @@ type application struct {
 	banners   *models.BannerModel
 	bannerTag *models.BannerTagModel
 	users     *models.UserModel
-	cache
+	cache     cachedData
 }
 
 func main() {
@@ -47,6 +46,7 @@ func main() {
 		banners:   &models.BannerModel{DB: db},
 		bannerTag: &models.BannerTagModel{DB: db},
 		users:     &models.UserModel{DB: db},
+		cache:     cachedData{},
 	}
 
 	srv := &http.Server{
