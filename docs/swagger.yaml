@@ -1,0 +1,294 @@
+basePath: /
+definitions:
+  avito_app_internal_models.Banner:
+    properties:
+      banner_id:
+        type: integer
+      content:
+        $ref: '#/definitions/avito_app_internal_models.Content'
+      created_at:
+        example: "2024-04-14"
+        type: string
+      feature_id:
+        example: 0
+        type: integer
+      is_active:
+        example: true
+        type: boolean
+      tag_ids:
+        example:
+        - 0
+        items:
+          type: integer
+        type: array
+      updated_at:
+        example: "2024-04-14"
+        type: string
+    type: object
+  avito_app_internal_models.Content:
+    properties:
+      text:
+        example: some_text
+        type: string
+      title:
+        example: some_title
+        type: string
+      url:
+        example: some_url
+        type: string
+    type: object
+  cmd.LoginRequest:
+    properties:
+      name:
+        example: admin
+        type: string
+      password:
+        example: "123"
+        type: string
+    type: object
+  cmd.RegisterRequest:
+    properties:
+      name:
+        example: John
+        type: string
+      password:
+        example: "123"
+        type: string
+      role:
+        example: admin
+        type: string
+    type: object
+host: localhost:5000
+info:
+  contact: {}
+  description: My Application
+  title: avito_app
+  version: "1.0"
+paths:
+  /banner:
+    get:
+      consumes:
+      - application/json
+      operationId: get-all-banners-id
+      parameters:
+      - description: feature_id
+        in: query
+        name: feature_id
+        type: integer
+      - description: tag_id
+        in: query
+        name: tag_id
+        type: integer
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      - description: offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Client Error
+        "401":
+          description: You are not authorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: getAllBanners
+    post:
+      consumes:
+      - application/json
+      operationId: create-banner-id
+      parameters:
+      - description: Data about banner
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/avito_app_internal_models.Banner'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Client Error
+        "401":
+          description: You are not authorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: createBanner
+  /banner/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: delete-banner-id
+      parameters:
+      - description: banner id
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Client Error
+        "401":
+          description: You are not authorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: deleteBanner
+    patch:
+      consumes:
+      - application/json
+      operationId: patch-banner-id
+      parameters:
+      - description: banner id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data about banner
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/avito_app_internal_models.Banner'
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Client Error
+        "401":
+          description: You are not authorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: patchBanner
+  /fill_tables:
+    post:
+      description: fill tables features and tags 1000 rows
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "500":
+          description: Internal server error
+      summary: fillTables
+      tags:
+      - preparing
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: login existing user
+      parameters:
+      - description: New user info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/cmd.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Succesfuly logged in
+          schema:
+            type: integer
+        "409":
+          description: Conflict
+          schema: {}
+      summary: loginUser
+      tags:
+      - registration and logging
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: register new user
+      parameters:
+      - description: New user info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/cmd.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: New user registered
+          schema:
+            type: integer
+        "409":
+          description: Conflict
+          schema: {}
+      summary: registerUser
+      tags:
+      - registration and logging
+  /user_banner:
+    get:
+      consumes:
+      - application/json
+      operationId: get-banner-id
+      parameters:
+      - description: feature_id
+        in: query
+        name: feature_id
+        required: true
+        type: integer
+      - description: tag_id
+        in: query
+        name: tag_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Client Error
+        "401":
+          description: You are not authorized
+        "404":
+          description: Not Found
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: getBanner
+schemes:
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

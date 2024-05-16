@@ -1,0 +1,50 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:16
+    container_name: database
+    volumes:
+      - db_vol:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: avito_db
+      POSTGRES_USER: boss
+      POSTGRES_PASSWORD: pass
+    networks:
+      - avito_net
+    ports:
+      - "5431:5432"
+    # restart: always
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready", "-U", "vk_admin"]
+    #   interval: 5s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 30s
+
+  backend:
+    image: avito_app:1
+    container_name: app
+    environment:
+      HOST: database
+      PORT: 5432
+      DB_USER: boss
+      DB_PASSWORD: pass
+      DB_NAME: avito_db
+    networks:
+      - avito_net
+    ports:
+      - "5000:5000"
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+
+
+volumes:
+
+  db_vol:
+    name: avito_vol
+    external: true
+
+networks:
+  avito_net:
